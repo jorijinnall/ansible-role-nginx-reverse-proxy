@@ -1,0 +1,42 @@
+---
+#Install Nginx
+- name: Install Nginx
+  package:
+    name: nginx
+    install_recommends: true
+    state: present
+
+- name: Remove default nginx config
+  file:
+    name: /etc/nginx/sites-enabled/default
+    state: absent
+
+#Remove site that are not anymore in "sites" variable
+- name: create certificates
+  include: certbot.yml
+  when: certbot_enabled == true
+
+- name: Configure nginx (Global configuration)
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  notify: reload nginx
+
+- name: Upload Sites templates
+  template:
+    src: site.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.site_name }}"
+  vars:
+      site_name: "{{ item.site_name }}"
+      site_host: "{{ item.site_host }}"
+      site_port: "{{ item.site_port }}"
+  with_items: "{{ sites }}"
+
+- name: Link available configuration to enabled
+  file:
+    src: "/etc/nginx/sites-available/{{ item.site_name }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.site_name }}"
+    state: link
+  when: item.site_enabled == true
+  with_items: "{{ sites }}"
+  notify: reload nginx

@@ -1,0 +1,14 @@
+---
+sites:
+  - site_name: test.foo.bar
+    site_port: 8080
+    site_host: 127.0.0.1
+    site_enabled: true
+
+cert_folder: /etc/letsencrypt/live
+
+# CERTBOT (Let's encrypt)
+certbot_create_if_missing: false
+certbot_create_method: standalone
+certbot_admin_email: postmaster@foo.bar
+certbot_enabled: true

@@ -1,0 +1,37 @@
+---
+- name: Upgrade System
+  apt:
+    upgrade: dist
+    update_cache: yes
+
+- name: Add certbot repository
+  apt_repository:
+   repo: 'ppa:certbot/certbot'
+
+- name: Install Certbot's Nginx package
+  apt:
+   name: python-certbot-nginx
+   state: present
+
+- name: Check if certificate already exists.
+  stat:
+    path: "{{ cert_folder }}/{{ item.site_name }}.pem"
+  register: letsencrypt_cert
+  with_items: "{{ sites }}"
+
+- name: Stop webserver to generate certificate
+  service:
+    name: nginx
+    state: stopped
+  with_items: "{{ letsencrypt_cert.results }}"
+  when: item.stat.exists == False
+
+- name: Generate new certificate if one doesn't exist.
+  shell: "certbot certonly --standalone --noninteractive --agree-tos --email {{ certbot_admin_email }} -d {{ item.item.site_name}}"
+  with_items: "{{ letsencrypt_cert.results }}"
+  when: item.stat.exists == False
+
+- name: Start webserver to generate certificate
+  service:
+    name: nginx
+    state: started
